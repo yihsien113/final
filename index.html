@@ -5,24 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>接龍記牌小工具 (最大記憶：200 步)</title>
   <style>
+    /* (CSS 樣式保持不變，略) */
     /* ========== 深色模式基礎設定 ========== */
     body { 
       font-family: 'Microsoft JhengHei', Arial, sans-serif; 
       text-align: center; 
-      background: #282c34; /* 深藍灰色背景 */
-      color: #f0f0f0; /* 淺灰色文字 */
+      background: #282c34; 
+      color: #f0f0f0; 
       font-size: 18px; 
       margin: 15px;
     }
     
     h2 {
-      color: #61dafb; /* 亮藍色標題 */
+      color: #61dafb; 
       margin-bottom: 15px;
     }
     
     /* ========== 通用按鈕樣式 ========== */
     button { 
-      /* 這裡調整為按鈕的基準字體大小 */
       font-size: 20px;  
       margin: 4px; 
       padding: 8px 12px; 
@@ -45,22 +45,21 @@
         color: #e74c3c !important; 
     }
 
-    /* ========== 點擊後保持的選中狀態 ========== */
-    .suit-group button.selected {
+    /* ========== 點擊後保持的選中狀態 (適用於花色和數字) ========== */
+    .suit-group button.selected,
+    .rank-group button.selected { 
         background: #61dafb; 
         color: #1e1e1e !important; 
         border: 1px solid #61dafb;
         box-shadow: 0 0 5px #61dafb;
     }
 
-    /* 【新增】花色符號放大樣式 */
+    /* 花色符號放大樣式 */
     .suit-icon {
-        /* 將符號放大到 28px，使其更明顯 */
         font-size: 28px; 
-        /* 確保 span 內的顏色和父按鈕一致 */
         color: inherit; 
     }
-    /* 【新增】確保紅色花色符號的顏色 */
+    /* 確保紅色花色符號的顏色 */
     .red-text-suit .suit-icon {
         color: #e74c3c !important; 
     }
@@ -134,10 +133,9 @@
       margin-right: 8px; 
     }
     
-    /* 花色按鈕加大 (已調整：移除 font-size，改由 .suit-icon 控制) */
+    /* 花色按鈕加大 */
     .suit-group button {
         padding: 10px 10px; 
-        /* font-size: 22px; <--- 移除，維持基礎 20px 或更小 */
         min-width: 50px;
     }
 
@@ -370,35 +368,57 @@
 
 
   <script>
-    let selectedSuit = ''; // 儲存選中的花色符號 (♠, ♥, ♧, ♢)
+    // 當前選中且高亮的狀態 (點擊按鈕時會被賦值)
+    let selectedSuit = ''; 
     let selectedRank = '';
     
-    // ========== 復原/反復原功能核心變數與函數 (未修改) ==========
+    // 上次成功記牌的結果 (用於延續)
+    let lastUsedSuit = '';
+    let lastUsedRank = '';
+    
+    // ========== 復原/反復原/記憶點功能 (未修改，狀態儲存邏輯已包含 lastUsed 變數) ==========
     let history = [];
     let redoStack = []; 
     const MAX_HISTORY = 200; 
-
     let bookmarkState = null; 
 
     function getCurrentState() {
         const slots = document.querySelectorAll('.slot');
-        return Array.from(slots).map(s => {
-            return {
-                content: s.innerText,
-                color: s.style.color
-            };
-        });
+        return {
+            slots: Array.from(slots).map(s => {
+                return {
+                    content: s.innerText,
+                    color: s.style.color
+                };
+            }),
+            lastUsedSuit: lastUsedSuit,
+            lastUsedRank: lastUsedRank
+        };
+    }
+
+    function clearSelections() {
+        // 此函數用於徹底清除選中變數和高亮狀態 (供外部工具函數如 clearAll/loadState 呼叫)
+        selectedSuit = ''; 
+        selectedRank = '';
+        document.querySelectorAll('.rank-group button').forEach(btn => btn.classList.remove('selected'));
+        document.querySelectorAll('.suit-group button').forEach(btn => btn.classList.remove('selected'));
     }
 
     function loadState(state) {
         const slots = document.querySelectorAll('.slot');
-        if (state.length !== slots.length) return; 
+        if (state.slots.length !== slots.length) return; 
 
         slots.forEach((s, index) => {
-            const item = state[index];
+            const item = state.slots[index];
             s.innerText = item.content;
             s.style.color = item.color || '#f0f0f0'; 
         });
+        
+        lastUsedSuit = state.lastUsedSuit || '';
+        lastUsedRank = state.lastUsedRank || '';
+        
+        // 載入狀態後，清除當前選中/高亮狀態，防止混亂
+        clearSelections(); 
     }
 
     function saveState() {
@@ -406,7 +426,9 @@
         
         if (history.length > 0) {
             const lastState = history[history.length - 1];
-            if (JSON.stringify(lastState) === JSON.stringify(currentState)) {
+            if (JSON.stringify(lastState.slots) === JSON.stringify(currentState.slots) &&
+                lastState.lastUsedSuit === currentState.lastUsedSuit &&
+                lastState.lastUsedRank === currentState.lastUsedRank) {
                 return; 
             }
         }
@@ -466,11 +488,11 @@
 
 
     // ==========================================================
-    // ** 核心動作函數 (功能已確認全部正常) **
+    // ** 核心動作函數 (已調整：高亮保持, 單擊覆蓋/填入, 填牌後鎖定新填入) **
     // ==========================================================
 
     function selectSuit(suit) {
-      // 1. 清除所有花色按鈕的 selected 狀態
+      // 1. 清除所有花色按鈕的 selected 狀態 (只影響花色組)
       document.querySelectorAll('.suit-group button').forEach(btn => {
           btn.classList.remove('selected');
       });
@@ -480,55 +502,92 @@
       
       // 3. 找到被點擊的按鈕並加上 selected 狀態
       document.querySelectorAll('.suit-group button').forEach(btn => {
-          // 注意：現在按鈕的 innerText 包含 <span>，需要匹配 suit 符號。
-          // 最可靠的方法是檢查按鈕的 data 屬性，但為了簡潔，我們使用 suit 參數匹配。
           if (btn.querySelector('.suit-icon') && btn.querySelector('.suit-icon').innerText.trim() === suit) {
               btn.classList.add('selected');
           }
       });
-      
-      // 4. 清除已選中的 Rank
-      selectedRank = '';
+      // 保持數字高亮不變
     }
 
     function selectRank(rank) {
+      // 1. 清除所有數字按鈕的 selected 狀態 (只影響數字組)
+      document.querySelectorAll('.rank-group button').forEach(btn => {
+          btn.classList.remove('selected');
+      });
+
+      // 2. 設定新的選中數字
       selectedRank = rank;
+
+      // 3. 找到被點擊的按鈕並加上 selected 狀態
+      document.querySelectorAll('.rank-group button').forEach(btn => {
+          if (btn.innerText.trim() === rank) {
+              btn.classList.add('selected');
+          }
+      });
+      // 保持花色高亮不變
     }
 
     function fillSlot(btn) {
-      // 任何新動作前，清空 Redo 堆疊
-      if (redoStack.length > 0) {
-          redoStack = []; 
-      }
+        // 任何新動作前，清空 Redo 堆疊
+        if (redoStack.length > 0) {
+            redoStack = [];
+        }
 
-      // ** 第一優先：如果槽位已經有內容，點擊後即消除 (已修復) **
-      if (btn.innerText !== '') {
-        btn.innerText = '';
-        btn.style.color = '#f0f0f0';
-        saveState(); 
-        return; 
-      }
+        // 1. 判斷將要使用的牌型 (包含延續邏輯)
+        let suitToUse = selectedSuit;
+        let rankToUse = selectedRank;
 
-      // ** 第二順位：如果槽位為空，且花色和數字都選中，則填牌 **
-      if (selectedSuit && selectedRank) {
-        btn.innerText = selectedSuit + selectedRank;
+        // --- 延續邏輯判斷 ---
+        if (suitToUse && !rankToUse) {
+            // 情況一：只選了花色，使用上次的數字延續
+            rankToUse = lastUsedRank;
+        } else if (!suitToUse && rankToUse) {
+            // 情況二：只選了數字，使用上次的花色延續
+            suitToUse = lastUsedSuit;
+        }
         
-        // 判斷紅色的花色 (實心紅心 ♥, 空心磚塊 ♢)
-        if (selectedSuit === '♥' || selectedSuit === '♢') {
+        const hasValidCardToFill = suitToUse && rankToUse;
+        const isSlotFilled = btn.innerText !== '';
+
+        if (!hasValidCardToFill) {
+            // 只有當沒有選定要填入的牌時，才允許清除已填入的槽位，否則阻止填牌
+            if (isSlotFilled) {
+                // 點擊已填入槽位，但沒有新牌要填 -> 清除該槽位
+                btn.innerText = '';
+                btn.style.color = '#f0f0f0';
+                saveState();
+                return;
+            } else {
+                // 點擊空白槽位，但沒有新牌要填 -> 阻止填牌
+                return;
+            }
+        }
+        
+        // --- 執行填牌/覆蓋 ---
+        
+        // 填入/覆蓋
+        btn.innerText = suitToUse + rankToUse;
+        
+        // 判斷顏色
+        if (suitToUse === '♥' || suitToUse === '♢') {
             btn.style.color = 'red';
         } else {
-            // 黑色花色 (實心黑桃 ♠, 空心梅花 ♧)
             btn.style.color = '#f0f0f0'; 
         }
         
-        // 僅清除 selectedRank (維持選中的花色)
-        selectedRank = ''; 
+        // 2. 更新記憶狀態 (延續牌型)
+        lastUsedSuit = suitToUse;
+        lastUsedRank = rankToUse;
+        
+        // 3. 清除選中變數 (但保留高亮樣式)，**鎖定**新的填入，防止連續點擊空白槽位
+        selectedSuit = ''; 
+        selectedRank = '';
+        
         saveState();
-      } 
     }
 
     function clearAll() {
-      if (confirm("確定要清除所有 36 個記牌槽的紀錄嗎？這個動作將不可復原（但復原歷史仍保留）。")) {
+      if (confirm("確定要清除所有 36 個記牌槽、花色/數字選中狀態以及上次紀錄的延續記憶嗎？")) {
           if (redoStack.length > 0) {
               redoStack = []; 
           }
@@ -538,6 +597,11 @@
               s.innerText = '';
               s.style.color = '#f0f0f0';
           });
+          
+          // 清除所有狀態 (包括高亮)
+          clearSelections();
+          lastUsedSuit = '';
+          lastUsedRank = '';
 
           saveState(); 
       }
