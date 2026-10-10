@@ -3,6 +3,7 @@
   "short_name": "記牌工具",
   "start_url": "./index.html",
   "display": "standalone",
+  "orientation": "landscape",
   "background_color": "#282c34",
   "theme_color": "#282c34",
   "icons": [

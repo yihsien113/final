@@ -29,8 +29,8 @@
     
     /* ========== 自動等比例縮放的容器 ========== */
     #app-container {
-      width: 960px;  /* 整體版面再加寬，容納更寬的按鍵 */
-      height: 480px; /* 【修改點】壓低整體預設高度，讓上下自動產生更多留白 */
+      width: 960px;  
+      height: 480px; 
       position: absolute;
       left: 50%;
       top: 50%;
@@ -112,7 +112,6 @@
       grid-template-columns: repeat(2, auto);
       gap: 6px; 
     }
-    /* 【修改點】花色按鈕：限制高度，只加寬 */
     .suit-group button { 
       width: 80px; 
       height: 52px; 
@@ -129,7 +128,6 @@
       justify-content: center;
       gap: 6px;
     }
-    /* 【修改點】數字按鈕：加寬到 90px，高度壓平到 50px */
     .rank-row button { 
       font-size: 26px; 
       font-weight: bold;
@@ -140,7 +138,7 @@
     /* ========== 24 格記牌區 ========== */
     .grid { 
       display: grid; 
-      grid-template-columns: repeat(6, 105px); /* 【修改點】格子寬度大幅拉長 */
+      grid-template-columns: repeat(6, 105px); 
       gap: 10px; 
       justify-content: center; 
       padding: 12px;
@@ -151,7 +149,7 @@
     
     .slot { 
       width: 105px;   
-      height: 54px;  /* 【修改點】格子高度壓低，呈現扁平的長方形 */
+      height: 54px;  
       font-size: 28px;  
       border: 3px solid #555; 
       border-radius: 8px;
@@ -179,7 +177,6 @@
       gap: 8px;
     }
 
-    /* 【修改點】側邊按鈕：壓低高度 */
     .clear-button { 
       font-size: 16px; 
       font-weight: bold;
@@ -283,30 +280,23 @@
   </div>
 
   <script>
-    // ========== 自動等比例放大與「強制預留留白」邏輯 ==========
+    // ========== 自動等比例放大 (回歸原生轉向) ==========
     function adjustScale() {
         const container = document.getElementById('app-container');
         const targetWidth = 960; 
         const targetHeight = 480; 
         
+        // 直接抓取真實的螢幕寬高，不再判定直橫向強制翻轉
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
         
-        const isPortrait = screenHeight > screenWidth;
-        
-        const logicalWidth = isPortrait ? screenHeight : screenWidth;
-        const logicalHeight = isPortrait ? screenWidth : screenHeight;
-        
-        // 【修改點】X 軸保留 4% 空隙 (0.96)，Y 軸強制保留 14% 空隙 (0.86) 來創造上下留白，避免壓迫
-        const scaleX = (logicalWidth * 0.96) / targetWidth;
-        const scaleY = (logicalHeight * 0.86) / targetHeight;
+        // X 軸保留 4% 空隙，Y 軸強制保留 14% 空隙創造上下留白
+        const scaleX = (screenWidth * 0.96) / targetWidth;
+        const scaleY = (screenHeight * 0.86) / targetHeight;
         const scale = Math.min(scaleX, scaleY);
         
-        if (isPortrait) {
-            container.style.transform = `translate(-50%, -50%) rotate(90deg) scale(${scale})`;
-        } else {
-            container.style.transform = `translate(-50%, -50%) rotate(0deg) scale(${scale})`;
-        }
+        // 單純縮放置中，將旋轉的工作交還給 iOS 系統本身
+        container.style.transform = `translate(-50%, -50%) scale(${scale})`;
     }
 
     window.addEventListener('resize', adjustScale);
