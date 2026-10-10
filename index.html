@@ -21,45 +21,37 @@
       margin: 0; 
       width: 100vw;
       height: 100vh;
-      height: 100dvh; /* 動態高度，確保不會被瀏覽器網址列吃掉 */
-      overflow: hidden; /* 防止任何捲動與滑動 */
+      height: 100dvh; 
+      overflow: hidden; 
       touch-action: none; 
-      position: relative; /* 提供絕對定位的基準 */
+      position: relative; 
     }
     
-    /* ========== 自動等比例縮放的容器 (改用絕對定位置中) ========== */
+    /* ========== 自動等比例縮放的容器 ========== */
     #app-container {
-      width: 740px;  
-      height: 580px; /* 稍微加高，確保內部元件不會擁擠被切到 */
+      width: 960px;  /* 整體版面再加寬，容納更寬的按鍵 */
+      height: 480px; /* 【修改點】壓低整體預設高度，讓上下自動產生更多留白 */
       position: absolute;
       left: 50%;
       top: 50%;
       transform-origin: center center;
       text-align: center;
       font-size: 18px; 
-      /* 預設先置中，稍後會被 JS 覆蓋加上 scale */
       transform: translate(-50%, -50%) scale(1);
-    }
-
-    /* ----- 以下完全保留你原本的 CSS 樣式 ----- */
-    h2 {
-      color: #61dafb; 
-      margin-top: 10px;
-      margin-bottom: 15px;
     }
     
     button { 
-      font-size: 20px;  
-      margin: 4px; 
-      padding: 8px 12px; 
-      border-radius: 6px; 
+      font-size: 26px;  
+      border-radius: 8px; 
       cursor: pointer;
       border: 1px solid #555; 
       background: #3a3f47; 
       color: #f0f0f0;
-      min-width: 40px; 
       transition: background-color 0.2s;
       touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     button:hover { background-color: #4c525d; }
 
@@ -69,16 +61,17 @@
     .rank-group button.selected { 
         background: #61dafb; 
         color: #1e1e1e !important; 
-        border: 1px solid #61dafb;
-        box-shadow: 0 0 5px #61dafb;
+        border: 2px solid #61dafb;
+        box-shadow: 0 0 8px #61dafb;
     }
 
-    .suit-icon { font-size: 28px; color: inherit; }
+    .suit-icon { font-size: 38px; color: inherit; line-height: 1; }
     .red-text-suit .suit-icon { color: #e74c3c !important; }
 
+    /* ========== 頂端排版 ========== */
     .top-alignment-wrapper {
-        max-width: 643px; 
-        margin: 10px auto; 
+        max-width: 940px; 
+        margin: 0 auto; 
     }
     .top-selection {
         display: flex;
@@ -86,134 +79,135 @@
         align-items: center; 
         width: 100%; 
     }
-    .top-left-col {
-        width: 105px; 
-        box-sizing: border-box; 
+    .top-left-col, .top-right-spacer {
+        width: 120px; 
         display: flex;
-        justify-content: flex-start; 
-        padding-right: 15px;
+        justify-content: flex-start;
+        flex-shrink: 0;
     }
-    .top-right-spacer { width: 105px; height: 1px; flex-shrink: 0; }
 
     .clear-all { 
-      width: 90px; 
+      width: 100px; 
+      height: 70px;
       background: #e74c3c; 
-      box-shadow: 0 3px 0 #c0392b;
-      font-size: 16px; 
-      display: flex;
+      box-shadow: 0 4px 0 #c0392b;
+      font-size: 18px; 
+      font-weight: bold;
       flex-direction: column; 
-      align-items: center;
-      padding: 8px 8px; 
       margin: 0; 
-      flex-shrink: 0; 
     }
-    .clear-all .clear-icon { font-size: 24px; margin-right: 0; margin-bottom: 2px; }
-    .clear-all:hover { background: #c0392b; transform: translateY(1px); box-shadow: 0 2px 0 #a03020; }
+    .clear-all .clear-icon { font-size: 28px; margin-bottom: 2px; }
+    .clear-all:hover { background: #c0392b; transform: translateY(2px); box-shadow: 0 2px 0 #a03020; }
 
     .selection-area {
         display: flex;
         align-items: center; 
-        width: 433px; 
-        justify-content: flex-start; 
-        flex-shrink: 1; 
+        justify-content: center; 
+        gap: 20px; 
+        flex-grow: 1; 
     }
 
     .suit-group {
       display: grid;
       grid-template-columns: repeat(2, auto);
-      gap: 1px; 
-      margin-right: 8px; 
+      gap: 6px; 
     }
-    .suit-group button { padding: 10px 10px; min-width: 50px; }
+    /* 【修改點】花色按鈕：限制高度，只加寬 */
+    .suit-group button { 
+      width: 80px; 
+      height: 52px; 
+    }
 
     .rank-group {
       display: flex;
       flex-direction: column;
-      margin-right: -70px; 
-      flex-shrink: 0;
+      gap: 6px;
     }
     .rank-row { 
       display: flex;
       flex-wrap: nowrap;
-      justify-content: flex-start;
-      margin: 0;
-      padding: 0;
+      justify-content: center;
+      gap: 6px;
+    }
+    /* 【修改點】數字按鈕：加寬到 90px，高度壓平到 50px */
+    .rank-row button { 
+      font-size: 26px; 
+      font-weight: bold;
+      width: 90px;  
+      height: 50px; 
     }
 
+    /* ========== 24 格記牌區 ========== */
     .grid { 
       display: grid; 
-      grid-template-columns: repeat(6, 68px); 
-      gap: 5px; 
+      grid-template-columns: repeat(6, 105px); /* 【修改點】格子寬度大幅拉長 */
+      gap: 10px; 
       justify-content: center; 
-      max-width: 510px; 
-      padding: 5px;
+      padding: 12px;
       background: #3a3f47;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.5); 
+      border-radius: 12px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.5); 
     }
     
     .slot { 
-      width: 68px;  
-      height: 50px; 
-      font-size: 24px;  
+      width: 105px;   
+      height: 54px;  /* 【修改點】格子高度壓低，呈現扁平的長方形 */
+      font-size: 28px;  
       border: 3px solid #555; 
       border-radius: 8px;
       background: #1e1e1e;
       color: #f0f0f0; 
       margin: 0; 
-      display: flex; 
-      align-items: center;
-      justify-content: center;
       font-weight: bold;
-      touch-action: manipulation;
     }
     .slot[style*="color: red"] { color: #ff6b6b !important; }
 
+    /* ========== 左右兩側功能按鈕 ========== */
     .main-area {
       display: flex;
       justify-content: center;
-      align-items: flex-start; 
-      margin: 10px auto;
-      max-width: 720px; 
+      align-items: flex-end; 
+      margin: 20px auto 0px; 
+      gap: 20px; 
+      max-width: 940px; 
     }
     
-    .left-sidebar-buttons { display: flex; flex-direction: column; width: 90px; margin-right: 15px; padding-top: 5px; }
-    .right-sidebar-buttons { display: flex; flex-direction: column; width: 90px; margin-left: 15px; padding-top: 5px; }
+    .left-sidebar-buttons, .right-sidebar-buttons { 
+      display: flex; 
+      flex-direction: column; 
+      width: 105px; 
+      gap: 8px;
+    }
 
+    /* 【修改點】側邊按鈕：壓低高度 */
     .clear-button { 
       font-size: 16px; 
-      padding: 8px 8px; 
-      margin: 5px 0;
-      border-radius: 6px;
+      font-weight: bold;
+      height: 60px;
+      border-radius: 8px;
       color: white; 
       border: none;
-      width: 90px; 
-      display: flex;
       flex-direction: column; 
-      align-items: center;
     }
     .clear-icon { font-size: 24px; margin-bottom: 2px; }
     
-    .bookmark-button { background: #f1c40f; box-shadow: 0 3px 0 #d1ac0d; color: #333; }
-    .bookmark-button:hover { background: #d1ac0d; transform: translateY(1px); box-shadow: 0 2px 0 #b3910c; }
+    .bookmark-button { background: #f1c40f; box-shadow: 0 4px 0 #d1ac0d; color: #333; }
+    .bookmark-button:hover { background: #d1ac0d; transform: translateY(2px); box-shadow: 0 2px 0 #b3910c; }
     .bookmark-button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none; background: #555 !important; }
 
-    .clear-empty { background: #2ecc71; box-shadow: 0 3px 0 #27ae60; }
-    .clear-empty:hover { background: #27ae60; transform: translateY(1px); box-shadow: 0 2px 0 #219d55; }
+    .clear-empty { background: #2ecc71; box-shadow: 0 4px 0 #27ae60; }
+    .clear-empty:hover { background: #27ae60; transform: translateY(2px); box-shadow: 0 2px 0 #219d55; }
 
-    .undo-button { background: #3498db; box-shadow: 0 3px 0 #2980b9; }
-    .undo-button:hover { background: #2980b9; transform: translateY(1px); box-shadow: 0 2px 0 #2071a1; }
+    .undo-button { background: #3498db; box-shadow: 0 4px 0 #2980b9; }
+    .undo-button:hover { background: #2980b9; transform: translateY(2px); box-shadow: 0 2px 0 #2071a1; }
     
-    .redo-button { background: #1abc9c; box-shadow: 0 3px 0 #16a085; }
-    .redo-button:hover { background: #16a085; transform: translateY(1px); box-shadow: 0 2px 0 #148f77; }
+    .redo-button { background: #1abc9c; box-shadow: 0 4px 0 #16a085; }
+    .redo-button:hover { background: #16a085; transform: translateY(2px); box-shadow: 0 2px 0 #148f77; }
   </style>
 </head>
 <body>
 
-  <!-- 用來自動縮放的包裝容器 -->
   <div id="app-container">
-      <h2>接龍記牌小工具 (最大記憶：200 步)</h2>
-
       <div class="top-alignment-wrapper">
           <div class="top-selection">
               <div class="top-left-col">
@@ -238,13 +232,15 @@
                           <button onclick="selectRank('3')">3</button>
                           <button onclick="selectRank('4')">4</button>
                           <button onclick="selectRank('5')">5</button>
-                          <button onclick="selectRank('6')">6</button>
                       </div>
                       <div class="rank-row">
+                          <button onclick="selectRank('6')">6</button>
                           <button onclick="selectRank('7')">7</button>
                           <button onclick="selectRank('8')">8</button>
                           <button onclick="selectRank('9')">9</button>
                           <button onclick="selectRank('10')">10</button>
+                      </div>
+                      <div class="rank-row">
                           <button onclick="selectRank('J')">J</button>
                           <button onclick="selectRank('Q')">Q</button>
                           <button onclick="selectRank('K')">K</button>
@@ -287,38 +283,41 @@
   </div>
 
   <script>
-    // ========== 自動等比例放大 (Zoom) 邏輯 - 修正裁切問題 ==========
+    // ========== 自動等比例放大與「強制預留留白」邏輯 ==========
     function adjustScale() {
         const container = document.getElementById('app-container');
-        const targetWidth = 740;
-        const targetHeight = 580;
+        const targetWidth = 960; 
+        const targetHeight = 480; 
         
         const screenWidth = window.innerWidth;
         const screenHeight = window.innerHeight;
         
-        const scaleX = (screenWidth * 0.98) / targetWidth;
-        const scaleY = (screenHeight * 0.98) / targetHeight;
+        const isPortrait = screenHeight > screenWidth;
+        
+        const logicalWidth = isPortrait ? screenHeight : screenWidth;
+        const logicalHeight = isPortrait ? screenWidth : screenHeight;
+        
+        // 【修改點】X 軸保留 4% 空隙 (0.96)，Y 軸強制保留 14% 空隙 (0.86) 來創造上下留白，避免壓迫
+        const scaleX = (logicalWidth * 0.96) / targetWidth;
+        const scaleY = (logicalHeight * 0.86) / targetHeight;
         const scale = Math.min(scaleX, scaleY);
         
-        // 使用 translate(-50%, -50%) 強制把畫面定在正中心，再進行 scale 縮放，徹底避免被切邊
-        container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+        if (isPortrait) {
+            container.style.transform = `translate(-50%, -50%) rotate(90deg) scale(${scale})`;
+        } else {
+            container.style.transform = `translate(-50%, -50%) rotate(0deg) scale(${scale})`;
+        }
     }
 
-    // 當螢幕翻轉或改變大小時，重新計算縮放
     window.addEventListener('resize', adjustScale);
-    
-    // 手機翻轉時，加入延遲確保抓到最新的螢幕尺寸 (避免抓到舊的寬高)
     window.addEventListener('orientationchange', () => {
         adjustScale();
         setTimeout(adjustScale, 100);
         setTimeout(adjustScale, 300);
     });
-    
-    // 初始化執行一次
     adjustScale();
 
-
-    // ========== 你的原本記牌邏輯 (完全保留) ==========
+    // ========== 記牌邏輯 ==========
     let selectedSuit = ''; 
     let selectedRank = '';
     let lastUsedSuit = '';
@@ -438,7 +437,7 @@
     }
 
     function clearAll() {
-      if (confirm("確定要清除所有 36 個記牌槽、花色/數字選中狀態以及上次紀錄的延續記憶嗎？")) {
+      if (confirm("確定要清除所有 24 個記牌槽、花色/數字選中狀態以及上次紀錄的延續記憶嗎？")) {
           if (redoStack.length > 0) redoStack = []; 
           document.querySelectorAll('.slot').forEach(s => { s.innerText = ''; s.style.color = '#f0f0f0'; });
           clearSelections(); lastUsedSuit = ''; lastUsedRank = '';
@@ -455,7 +454,8 @@
       slotsContainer.innerHTML = '';
       nonEmpty.forEach(s => slotsContainer.appendChild(s));
       
-      for (let i = nonEmpty.length; i < 36; i++) {
+      const totalSlots = 24;
+      for (let i = nonEmpty.length; i < totalSlots; i++) {
         let b = document.createElement('button');
         b.className = 'slot'; b.onclick = () => fillSlot(b);
         slotsContainer.appendChild(b);
@@ -464,7 +464,7 @@
     }
 
     const slotsContainer = document.getElementById('slots');
-    for (let i = 0; i < 36; i++) {
+    for (let i = 0; i < 24; i++) {
       let b = document.createElement('button');
       b.className = 'slot'; b.onclick = () => fillSlot(b);
       slotsContainer.appendChild(b);
@@ -472,7 +472,6 @@
 
     window.onload = function() { saveState(); updateBookmarkButtons(); }
 
-    // ========== 註冊 PWA Service Worker ==========
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(err => console.log('ServiceWorker 註冊失敗: ', err));
