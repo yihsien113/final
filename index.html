@@ -2,32 +2,52 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>接龍記牌小工具 (最大記憶：200 步)</title>
+  
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#282c34">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="記牌工具">
-  <link rel="apple-touch-icon" href="icon.webp">
+  <link rel="apple-touch-icon" href=""> 
+  
   <style>
-    /* (CSS 樣式保持不變，略) */
-    /* ========== 深色模式基礎設定 ========== */
+    /* ========== 鎖定背景與修正置中方式 ========== */
     body { 
       font-family: 'Microsoft JhengHei', Arial, sans-serif; 
-      text-align: center; 
       background: #282c34; 
       color: #f0f0f0; 
-      font-size: 18px; 
-      margin: 15px;
+      margin: 0; 
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh; /* 動態高度，確保不會被瀏覽器網址列吃掉 */
+      overflow: hidden; /* 防止任何捲動與滑動 */
+      touch-action: none; 
+      position: relative; /* 提供絕對定位的基準 */
     }
     
+    /* ========== 自動等比例縮放的容器 (改用絕對定位置中) ========== */
+    #app-container {
+      width: 740px;  
+      height: 580px; /* 稍微加高，確保內部元件不會擁擠被切到 */
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform-origin: center center;
+      text-align: center;
+      font-size: 18px; 
+      /* 預設先置中，稍後會被 JS 覆蓋加上 scale */
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* ----- 以下完全保留你原本的 CSS 樣式 ----- */
     h2 {
       color: #61dafb; 
+      margin-top: 10px;
       margin-bottom: 15px;
     }
     
-    /* ========== 通用按鈕樣式 ========== */
     button { 
       font-size: 20px;  
       margin: 4px; 
@@ -41,17 +61,10 @@
       transition: background-color 0.2s;
       touch-action: manipulation;
     }
-    
-    button:hover {
-      background-color: #4c525d; 
-    }
+    button:hover { background-color: #4c525d; }
 
-    /* 紅色花色文字 (只有文字變色) */
-    .red-text-suit {
-        color: #e74c3c !important; 
-    }
+    .red-text-suit { color: #e74c3c !important; }
 
-    /* ========== 點擊後保持的選中狀態 (適用於花色和數字) ========== */
     .suit-group button.selected,
     .rank-group button.selected { 
         background: #61dafb; 
@@ -60,29 +73,19 @@
         box-shadow: 0 0 5px #61dafb;
     }
 
-    /* 花色符號放大樣式 */
-    .suit-icon {
-        font-size: 28px; 
-        color: inherit; 
-    }
-    /* 確保紅色花色符號的顏色 */
-    .red-text-suit .suit-icon {
-        color: #e74c3c !important; 
-    }
+    .suit-icon { font-size: 28px; color: inherit; }
+    .red-text-suit .suit-icon { color: #e74c3c !important; }
 
-    /* ========== 頂部控制區：三欄式對齊 ========== */
     .top-alignment-wrapper {
         max-width: 643px; 
         margin: 10px auto; 
     }
-
     .top-selection {
         display: flex;
         justify-content: space-between;
         align-items: center; 
         width: 100%; 
     }
-
     .top-left-col {
         width: 105px; 
         box-sizing: border-box; 
@@ -90,14 +93,8 @@
         justify-content: flex-start; 
         padding-right: 15px;
     }
+    .top-right-spacer { width: 105px; height: 1px; flex-shrink: 0; }
 
-    .top-right-spacer {
-        width: 105px; 
-        height: 1px;
-        flex-shrink: 0;
-    }
-
-    /* ========== [全部清除] 按鈕 ========== */
     .clear-all { 
       width: 90px; 
       background: #e74c3c; 
@@ -110,19 +107,9 @@
       margin: 0; 
       flex-shrink: 0; 
     }
-    .clear-all .clear-icon {
-        font-size: 24px; 
-        margin-right: 0;
-        margin-bottom: 2px;
-    }
-    .clear-all:hover {
-      background: #c0392b;
-      transform: translateY(1px);
-      box-shadow: 0 2px 0 #a03020;
-    }
+    .clear-all .clear-icon { font-size: 24px; margin-right: 0; margin-bottom: 2px; }
+    .clear-all:hover { background: #c0392b; transform: translateY(1px); box-shadow: 0 2px 0 #a03020; }
 
-
-    /* ========== 2. 選擇區域內元件樣式 (中間部分) ========== */
     .selection-area {
         display: flex;
         align-items: center; 
@@ -131,29 +118,20 @@
         flex-shrink: 1; 
     }
 
-    /* 花色按鈕容器 (2x2) */
     .suit-group {
       display: grid;
       grid-template-columns: repeat(2, auto);
       gap: 1px; 
       margin-right: 8px; 
     }
-    
-    /* 花色按鈕加大 */
-    .suit-group button {
-        padding: 10px 10px; 
-        min-width: 50px;
-    }
+    .suit-group button { padding: 10px 10px; min-width: 50px; }
 
-    /* 數字按鈕容器 (A-6, 7-K) */
     .rank-group {
       display: flex;
       flex-direction: column;
       margin-right: -70px; 
       flex-shrink: 0;
     }
-
-    /* 數字按鈕的每一行 */
     .rank-row { 
       display: flex;
       flex-wrap: nowrap;
@@ -162,7 +140,6 @@
       padding: 0;
     }
 
-    /* ========== 記牌槽網格 & 記牌槽樣式 ========== */
     .grid { 
       display: grid; 
       grid-template-columns: repeat(6, 68px); 
@@ -190,12 +167,8 @@
       font-weight: bold;
       touch-action: manipulation;
     }
-    .slot[style*="color: red"] {
-        color: #ff6b6b !important; 
-    }
+    .slot[style*="color: red"] { color: #ff6b6b !important; }
 
-
-    /* ========== 記牌區總容器 & 側邊欄 ========== */
     .main-area {
       display: flex;
       justify-content: center;
@@ -204,23 +177,9 @@
       max-width: 720px; 
     }
     
-    .left-sidebar-buttons { 
-      display: flex;
-      flex-direction: column; 
-      width: 90px; 
-      margin-right: 15px; 
-      padding-top: 5px; 
-    }
+    .left-sidebar-buttons { display: flex; flex-direction: column; width: 90px; margin-right: 15px; padding-top: 5px; }
+    .right-sidebar-buttons { display: flex; flex-direction: column; width: 90px; margin-left: 15px; padding-top: 5px; }
 
-    .right-sidebar-buttons { 
-      display: flex;
-      flex-direction: column; 
-      width: 90px; 
-      margin-left: 15px; 
-      padding-top: 5px; 
-    }
-
-    /* ========== 側邊按鈕樣式 (通用) ========== */
     .clear-button { 
       font-size: 16px; 
       padding: 8px 8px; 
@@ -233,156 +192,137 @@
       flex-direction: column; 
       align-items: center;
     }
-
-    .clear-icon {
-      font-size: 24px; 
-      margin-bottom: 2px; 
-    }
+    .clear-icon { font-size: 24px; margin-bottom: 2px; }
     
-    .bookmark-button {
-      background: #f1c40f; 
-      box-shadow: 0 3px 0 #d1ac0d;
-      color: #333; 
-    }
-    .bookmark-button:hover {
-      background: #d1ac0d;
-      transform: translateY(1px);
-      box-shadow: 0 2px 0 #b3910c;
-    }
-    .bookmark-button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      box-shadow: none;
-      transform: none;
-      background: #555 !important;
-    }
+    .bookmark-button { background: #f1c40f; box-shadow: 0 3px 0 #d1ac0d; color: #333; }
+    .bookmark-button:hover { background: #d1ac0d; transform: translateY(1px); box-shadow: 0 2px 0 #b3910c; }
+    .bookmark-button:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: none; background: #555 !important; }
 
+    .clear-empty { background: #2ecc71; box-shadow: 0 3px 0 #27ae60; }
+    .clear-empty:hover { background: #27ae60; transform: translateY(1px); box-shadow: 0 2px 0 #219d55; }
 
-    .clear-empty { 
-      background: #2ecc71; 
-      box-shadow: 0 3px 0 #27ae60;
-    }
-    .clear-empty:hover {
-      background: #27ae60;
-      transform: translateY(1px);
-      box-shadow: 0 2px 0 #219d55;
-    }
-
-    .undo-button {
-        background: #3498db; 
-        box-shadow: 0 3px 0 #2980b9;
-    }
-    .undo-button:hover {
-        background: #2980b9;
-        transform: translateY(1px);
-        box-shadow: 0 2px 0 #2071a1;
-    }
+    .undo-button { background: #3498db; box-shadow: 0 3px 0 #2980b9; }
+    .undo-button:hover { background: #2980b9; transform: translateY(1px); box-shadow: 0 2px 0 #2071a1; }
     
-    .redo-button {
-        background: #1abc9c; 
-        box-shadow: 0 3px 0 #16a085;
-    }
-    .redo-button:hover {
-        background: #16a085;
-        transform: translateY(1px);
-        box-shadow: 0 2px 0 #148f77;
-    }
+    .redo-button { background: #1abc9c; box-shadow: 0 3px 0 #16a085; }
+    .redo-button:hover { background: #16a085; transform: translateY(1px); box-shadow: 0 2px 0 #148f77; }
   </style>
 </head>
 <body>
 
-  <h2>接龍記牌小工具 (最大記憶：200 步)</h2>
+  <!-- 用來自動縮放的包裝容器 -->
+  <div id="app-container">
+      <h2>接龍記牌小工具 (最大記憶：200 步)</h2>
 
-  <div class="top-alignment-wrapper">
-      <div class="top-selection">
-          
-          <div class="top-left-col">
-              <button class="clear-all" onclick="clearAll()">
-                  <span class="clear-icon">❌</span>
-                  全部清除
-              </button>
-          </div>
-
-          <div class="selection-area">
-              
-              <div class="suit-group">
-                  <button onclick="selectSuit('♠')"><span class="suit-icon">♠</span></button>
-                  <button class="red-text-suit" onclick="selectSuit('♥')"><span class="suit-icon">♥</span></button>
-                  <button onclick="selectSuit('♧')"><span class="suit-icon">♧</span></button>
-                  <button class="red-text-suit" onclick="selectSuit('♢')"><span class="suit-icon">♢</span></button>
+      <div class="top-alignment-wrapper">
+          <div class="top-selection">
+              <div class="top-left-col">
+                  <button class="clear-all" onclick="clearAll()">
+                      <span class="clear-icon">❌</span>
+                      全部清除
+                  </button>
               </div>
 
-              <div class="rank-group">
-                  <div class="rank-row">
-                      <button onclick="selectRank('A')">A</button>
-                      <button onclick="selectRank('2')">2</button>
-                      <button onclick="selectRank('3')">3</button>
-                      <button onclick="selectRank('4')">4</button>
-                      <button onclick="selectRank('5')">5</button>
-                      <button onclick="selectRank('6')">6</button>
+              <div class="selection-area">
+                  <div class="suit-group">
+                      <button onclick="selectSuit('♠')"><span class="suit-icon">♠</span></button>
+                      <button class="red-text-suit" onclick="selectSuit('♥')"><span class="suit-icon">♥</span></button>
+                      <button onclick="selectSuit('♧')"><span class="suit-icon">♧</span></button>
+                      <button class="red-text-suit" onclick="selectSuit('♢')"><span class="suit-icon">♢</span></button>
                   </div>
-                  <div class="rank-row">
-                      <button onclick="selectRank('7')">7</button>
-                      <button onclick="selectRank('8')">8</button>
-                      <button onclick="selectRank('9')">9</button>
-                      <button onclick="selectRank('10')">10</button>
-                      <button onclick="selectRank('J')">J</button>
-                      <button onclick="selectRank('Q')">Q</button>
-                      <button onclick="selectRank('K')">K</button>
+
+                  <div class="rank-group">
+                      <div class="rank-row">
+                          <button onclick="selectRank('A')">A</button>
+                          <button onclick="selectRank('2')">2</button>
+                          <button onclick="selectRank('3')">3</button>
+                          <button onclick="selectRank('4')">4</button>
+                          <button onclick="selectRank('5')">5</button>
+                          <button onclick="selectRank('6')">6</button>
+                      </div>
+                      <div class="rank-row">
+                          <button onclick="selectRank('7')">7</button>
+                          <button onclick="selectRank('8')">8</button>
+                          <button onclick="selectRank('9')">9</button>
+                          <button onclick="selectRank('10')">10</button>
+                          <button onclick="selectRank('J')">J</button>
+                          <button onclick="selectRank('Q')">Q</button>
+                          <button onclick="selectRank('K')">K</button>
+                      </div>
                   </div>
               </div>
+              <div class="top-right-spacer"></div>
           </div>
-
-          <div class="top-right-spacer"></div>
-      </div>
-  </div>
-  
-  <div class="main-area">
-      <div class="left-sidebar-buttons">
-          
-          <button class="clear-button clear-empty" onclick="removeEmptySlots()">
-              <span class="clear-icon">🗑️</span>
-              清除空格
-          </button>
-          
-          <button class="clear-button undo-button" onclick="undo()">
-              <span class="clear-icon">↶</span>
-              復原
-          </button>
-          
-          <button class="clear-button redo-button" onclick="redo()">
-              <span class="clear-icon">↱</span>
-              反復原
-          </button>
-
       </div>
       
-      <div class="grid" id="slots"></div>
-
-      <div class="right-sidebar-buttons">
-          <button class="clear-button bookmark-button" onclick="saveBookmark()">
-              <span class="clear-icon">🔖</span>
-              紀錄
-          </button>
+      <div class="main-area">
+          <div class="left-sidebar-buttons">
+              <button class="clear-button clear-empty" onclick="removeEmptySlots()">
+                  <span class="clear-icon">🗑️</span>
+                  清除空格
+              </button>
+              <button class="clear-button undo-button" onclick="undo()">
+                  <span class="clear-icon">↶</span>
+                  復原
+              </button>
+              <button class="clear-button redo-button" onclick="redo()">
+                  <span class="clear-icon">↱</span>
+                  反復原
+              </button>
+          </div>
           
-          <button class="clear-button bookmark-button" id="loadBookmarkBtn" onclick="loadBookmark()">
-              <span class="clear-icon">🔙</span>
-              返回紀錄
-          </button>
+          <div class="grid" id="slots"></div>
+
+          <div class="right-sidebar-buttons">
+              <button class="clear-button bookmark-button" onclick="saveBookmark()">
+                  <span class="clear-icon">🔖</span>
+                  紀錄
+              </button>
+              <button class="clear-button bookmark-button" id="loadBookmarkBtn" onclick="loadBookmark()">
+                  <span class="clear-icon">🔙</span>
+                  返回紀錄
+              </button>
+          </div>
       </div>
   </div>
 
-
   <script>
-    // 當前選中且高亮的狀態 (點擊按鈕時會被賦值)
+    // ========== 自動等比例放大 (Zoom) 邏輯 - 修正裁切問題 ==========
+    function adjustScale() {
+        const container = document.getElementById('app-container');
+        const targetWidth = 740;
+        const targetHeight = 580;
+        
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        
+        const scaleX = (screenWidth * 0.98) / targetWidth;
+        const scaleY = (screenHeight * 0.98) / targetHeight;
+        const scale = Math.min(scaleX, scaleY);
+        
+        // 使用 translate(-50%, -50%) 強制把畫面定在正中心，再進行 scale 縮放，徹底避免被切邊
+        container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    }
+
+    // 當螢幕翻轉或改變大小時，重新計算縮放
+    window.addEventListener('resize', adjustScale);
+    
+    // 手機翻轉時，加入延遲確保抓到最新的螢幕尺寸 (避免抓到舊的寬高)
+    window.addEventListener('orientationchange', () => {
+        adjustScale();
+        setTimeout(adjustScale, 100);
+        setTimeout(adjustScale, 300);
+    });
+    
+    // 初始化執行一次
+    adjustScale();
+
+
+    // ========== 你的原本記牌邏輯 (完全保留) ==========
     let selectedSuit = ''; 
     let selectedRank = '';
-    
-    // 上次成功記牌的結果 (用於延續)
     let lastUsedSuit = '';
     let lastUsedRank = '';
-    
-    // ========== 復原/反復原/記憶點功能 (未修改，狀態儲存邏輯已包含 lastUsed 變數) ==========
     let history = [];
     let redoStack = []; 
     const MAX_HISTORY = 200; 
@@ -391,19 +331,13 @@
     function getCurrentState() {
         const slots = document.querySelectorAll('.slot');
         return {
-            slots: Array.from(slots).map(s => {
-                return {
-                    content: s.innerText,
-                    color: s.style.color
-                };
-            }),
+            slots: Array.from(slots).map(s => ({ content: s.innerText, color: s.style.color })),
             lastUsedSuit: lastUsedSuit,
             lastUsedRank: lastUsedRank
         };
     }
 
     function clearSelections() {
-        // 此函數用於徹底清除選中變數和高亮狀態 (供外部工具函數如 clearAll/loadState 呼叫)
         selectedSuit = ''; 
         selectedRank = '';
         document.querySelectorAll('.rank-group button').forEach(btn => btn.classList.remove('selected'));
@@ -413,55 +347,37 @@
     function loadState(state) {
         const slots = document.querySelectorAll('.slot');
         if (state.slots.length !== slots.length) return; 
-
         slots.forEach((s, index) => {
             const item = state.slots[index];
             s.innerText = item.content;
             s.style.color = item.color || '#f0f0f0'; 
         });
-        
         lastUsedSuit = state.lastUsedSuit || '';
         lastUsedRank = state.lastUsedRank || '';
-        
-        // 載入狀態後，清除當前選中/高亮狀態，防止混亂
         clearSelections(); 
     }
 
     function saveState() {
         const currentState = getCurrentState();
-        
         if (history.length > 0) {
             const lastState = history[history.length - 1];
             if (JSON.stringify(lastState.slots) === JSON.stringify(currentState.slots) &&
                 lastState.lastUsedSuit === currentState.lastUsedSuit &&
-                lastState.lastUsedRank === currentState.lastUsedRank) {
-                return; 
-            }
+                lastState.lastUsedRank === currentState.lastUsedRank) return; 
         }
-
-        if (history.length >= MAX_HISTORY) {
-            history.shift(); 
-        }
+        if (history.length >= MAX_HISTORY) history.shift(); 
         history.push(currentState);
     }
 
     function undo() {
-        if (history.length <= 1) {
-            return;
-        }
-        
+        if (history.length <= 1) return;
         const currentState = history.pop(); 
         redoStack.push(currentState);
-        
-        const previousState = history[history.length - 1];
-        loadState(previousState);
+        loadState(history[history.length - 1]);
     }
 
     function redo() {
-        if (redoStack.length === 0) {
-            return;
-        }
-
+        if (redoStack.length === 0) return;
         const nextState = redoStack.pop();
         loadState(nextState);
         history.push(nextState);
@@ -469,198 +385,97 @@
 
     function updateBookmarkButtons() {
         const loadBtn = document.getElementById('loadBookmarkBtn');
-        if (loadBtn) {
-            loadBtn.disabled = (bookmarkState === null);
-        }
+        if (loadBtn) loadBtn.disabled = (bookmarkState === null);
     }
 
-    function saveBookmark() {
-        bookmarkState = getCurrentState();
-        updateBookmarkButtons(); 
-    }
+    function saveBookmark() { bookmarkState = getCurrentState(); updateBookmarkButtons(); }
 
     function loadBookmark() {
-        if (bookmarkState === null) {
-            return;
-        }
-        
-        if (redoStack.length > 0) {
-            redoStack = []; 
-        }
-
+        if (bookmarkState === null) return;
+        if (redoStack.length > 0) redoStack = []; 
         loadState(bookmarkState);
         saveState(); 
     }
 
-
-    // ==========================================================
-    // ** 核心動作函數 (已調整：高亮保持, 單擊覆蓋/填入, 填牌後鎖定新填入) **
-    // ==========================================================
-
     function selectSuit(suit) {
-      // 1. 清除所有花色按鈕的 selected 狀態 (只影響花色組)
-      document.querySelectorAll('.suit-group button').forEach(btn => {
-          btn.classList.remove('selected');
-      });
-
-      // 2. 設定新的選中花色
+      document.querySelectorAll('.suit-group button').forEach(btn => btn.classList.remove('selected'));
       selectedSuit = suit;
-      
-      // 3. 找到被點擊的按鈕並加上 selected 狀態
       document.querySelectorAll('.suit-group button').forEach(btn => {
-          if (btn.querySelector('.suit-icon') && btn.querySelector('.suit-icon').innerText.trim() === suit) {
-              btn.classList.add('selected');
-          }
+          if (btn.querySelector('.suit-icon') && btn.querySelector('.suit-icon').innerText.trim() === suit) btn.classList.add('selected');
       });
-      // 保持數字高亮不變
     }
 
     function selectRank(rank) {
-      // 1. 清除所有數字按鈕的 selected 狀態 (只影響數字組)
-      document.querySelectorAll('.rank-group button').forEach(btn => {
-          btn.classList.remove('selected');
-      });
-
-      // 2. 設定新的選中數字
+      document.querySelectorAll('.rank-group button').forEach(btn => btn.classList.remove('selected'));
       selectedRank = rank;
-
-      // 3. 找到被點擊的按鈕並加上 selected 狀態
       document.querySelectorAll('.rank-group button').forEach(btn => {
-          if (btn.innerText.trim() === rank) {
-              btn.classList.add('selected');
-          }
+          if (btn.innerText.trim() === rank) btn.classList.add('selected');
       });
-      // 保持花色高亮不變
     }
 
     function fillSlot(btn) {
-        // 任何新動作前，清空 Redo 堆疊
-        if (redoStack.length > 0) {
-            redoStack = [];
-        }
-
-        // 1. 判斷將要使用的牌型 (包含延續邏輯)
+        if (redoStack.length > 0) redoStack = [];
         let suitToUse = selectedSuit;
         let rankToUse = selectedRank;
 
-        // --- 延續邏輯判斷 ---
-        if (suitToUse && !rankToUse) {
-            // 情況一：只選了花色，使用上次的數字延續
-            rankToUse = lastUsedRank;
-        } else if (!suitToUse && rankToUse) {
-            // 情況二：只選了數字，使用上次的花色延續
-            suitToUse = lastUsedSuit;
-        }
+        if (suitToUse && !rankToUse) rankToUse = lastUsedRank;
+        else if (!suitToUse && rankToUse) suitToUse = lastUsedSuit;
         
         const hasValidCardToFill = suitToUse && rankToUse;
         const isSlotFilled = btn.innerText !== '';
 
         if (!hasValidCardToFill) {
-            // 只有當沒有選定要填入的牌時，才允許清除已填入的槽位，否則阻止填牌
-            if (isSlotFilled) {
-                // 點擊已填入槽位，但沒有新牌要填 -> 清除該槽位
-                btn.innerText = '';
-                btn.style.color = '#f0f0f0';
-                saveState();
-                return;
-            } else {
-                // 點擊空白槽位，但沒有新牌要填 -> 阻止填牌
-                return;
-            }
+            if (isSlotFilled) { btn.innerText = ''; btn.style.color = '#f0f0f0'; saveState(); }
+            return;
         }
         
-        // --- 執行填牌/覆蓋 ---
-        
-        // 填入/覆蓋
         btn.innerText = suitToUse + rankToUse;
+        btn.style.color = (suitToUse === '♥' || suitToUse === '♢') ? 'red' : '#f0f0f0'; 
         
-        // 判斷顏色
-        if (suitToUse === '♥' || suitToUse === '♢') {
-            btn.style.color = 'red';
-        } else {
-            btn.style.color = '#f0f0f0'; 
-        }
-        
-        // 2. 更新記憶狀態 (延續牌型)
-        lastUsedSuit = suitToUse;
-        lastUsedRank = rankToUse;
-        
-        // 3. 清除選中變數 (但保留高亮樣式)，**鎖定**新的填入，防止連續點擊空白槽位
-        selectedSuit = ''; 
-        selectedRank = '';
-        
+        lastUsedSuit = suitToUse; lastUsedRank = rankToUse;
+        selectedSuit = ''; selectedRank = '';
         saveState();
     }
 
     function clearAll() {
       if (confirm("確定要清除所有 36 個記牌槽、花色/數字選中狀態以及上次紀錄的延續記憶嗎？")) {
-          if (redoStack.length > 0) {
-              redoStack = []; 
-          }
-
-          const slots = document.querySelectorAll('.slot');
-          slots.forEach(s => {
-              s.innerText = '';
-              s.style.color = '#f0f0f0';
-          });
-          
-          // 清除所有狀態 (包括高亮)
-          clearSelections();
-          lastUsedSuit = '';
-          lastUsedRank = '';
-
+          if (redoStack.length > 0) redoStack = []; 
+          document.querySelectorAll('.slot').forEach(s => { s.innerText = ''; s.style.color = '#f0f0f0'; });
+          clearSelections(); lastUsedSuit = ''; lastUsedRank = '';
           saveState(); 
       }
     }
 
     function removeEmptySlots() {
-      if (redoStack.length > 0) {
-          redoStack = []; 
-      }
-
+      if (redoStack.length > 0) redoStack = []; 
       const slots = Array.from(document.querySelectorAll('.slot'));
       const nonEmpty = slots.filter(s => s.innerText !== '');
       const slotsContainer = document.getElementById('slots');
       
       slotsContainer.innerHTML = '';
-      nonEmpty.forEach(s => {
-        slotsContainer.appendChild(s);
-      });
+      nonEmpty.forEach(s => slotsContainer.appendChild(s));
       
-      const totalSlots = 36;
-      for (let i = nonEmpty.length; i < totalSlots; i++) {
+      for (let i = nonEmpty.length; i < 36; i++) {
         let b = document.createElement('button');
-        b.className = 'slot';
-        b.onclick = () => fillSlot(b);
+        b.className = 'slot'; b.onclick = () => fillSlot(b);
         slotsContainer.appendChild(b);
       }
-      
       saveState(); 
     }
 
-    // 初始化 36 個記牌槽
     const slotsContainer = document.getElementById('slots');
     for (let i = 0; i < 36; i++) {
       let b = document.createElement('button');
-      b.className = 'slot';
-      b.onclick = () => fillSlot(b);
+      b.className = 'slot'; b.onclick = () => fillSlot(b);
       slotsContainer.appendChild(b);
     }
 
-    // 頁面載入後，儲存初始狀態並更新紀錄點按鈕狀態
-    window.onload = function() {
-        saveState(); 
-        updateBookmarkButtons(); 
-    }
+    window.onload = function() { saveState(); updateBookmarkButtons(); }
+
+    // ========== 註冊 PWA Service Worker ==========
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js')
-          .then(registration => {
-            console.log('ServiceWorker 註冊成功，範圍為: ', registration.scope);
-          })
-          .catch(err => {
-            console.log('ServiceWorker 註冊失敗: ', err);
-          });
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('ServiceWorker 註冊失敗: ', err));
       });
     }
   </script>
