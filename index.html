@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>接龍記牌小工具 (最大記憶：200 步)</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#282c34">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="記牌工具">
+  <link rel="apple-touch-icon" href="icon.webp">
   <style>
     /* (CSS 樣式保持不變，略) */
     /* ========== 深色模式基礎設定 ========== */
@@ -645,6 +651,17 @@
     window.onload = function() {
         saveState(); 
         updateBookmarkButtons(); 
+    }
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(registration => {
+            console.log('ServiceWorker 註冊成功，範圍為: ', registration.scope);
+          })
+          .catch(err => {
+            console.log('ServiceWorker 註冊失敗: ', err);
+          });
+      });
     }
   </script>
 
